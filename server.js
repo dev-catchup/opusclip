@@ -8,6 +8,11 @@ const fs = require('fs');
 const path = require('path');
 
 // Initialize OpenAI
+if (!process.env.OPENAI_API_KEY) {
+  console.error('❌ ERROR: OPENAI_API_KEY is not set!');
+  process.exit(1);
+}
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
@@ -430,9 +435,11 @@ app.listen(PORT, () => {
   console.log(`🚀 AI Video Generator Ready!`);
   console.log(`${'='.repeat(60)}`);
   console.log(`\n📍 Server: http://localhost:${PORT}`);
-  console.log(`\n✅ Requirements:`);
-  console.log(`   • FFmpeg installed`);
-  console.log(`   • OPENAI_API_KEY in .env`);
-  console.log(`   • PEXELS_API_KEY in .env\n`);
+  console.log(`\n✅ Environment:`);
+  console.log(`   • NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`   • OPENAI_API_KEY: ${process.env.OPENAI_API_KEY ? '✓ Set (sk-' + process.env.OPENAI_API_KEY.substring(3, 8) + '...)' : '✗ Missing'}`);
+  console.log(`   • PEXELS_API_KEY: ${process.env.PEXELS_API_KEY ? '✓ Set' : '✗ Missing'}`);
+  console.log(`   • DEMO_PASSWORD: ${process.env.DEMO_PASSWORD ? '✓ Set' : '✗ Missing (using default)'}`);
+  console.log(`   • FFmpeg: Checking...\n`);
 });
 
