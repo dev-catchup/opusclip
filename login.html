@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login - AI Video Generator</title>
+  <style>
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .login-container {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-width: 400px;
+      width: 100%;
+    }
+    h1 { 
+      color: #333; 
+      margin-top: 0;
+      text-align: center;
+      font-size: 28px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    input[type="password"] { 
+      width: 100%; 
+      padding: 12px;
+      font-size: 16px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      box-sizing: border-box;
+      margin-bottom: 20px;
+    }
+    input[type="password"]:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    button { 
+      width: 100%;
+      padding: 12px; 
+      font-size: 16px; 
+      cursor: pointer; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white; 
+      border: none; 
+      border-radius: 6px;
+      font-weight: 600;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    button:hover { 
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    button:disabled { 
+      background: #ccc; 
+      cursor: not-allowed;
+      transform: none;
+    }
+    .error {
+      background: #ffebee;
+      color: #c62828;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      text-align: center;
+      display: none;
+    }
+    .error.show {
+      display: block;
+    }
+    .icon {
+      text-align: center;
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="icon">🎬</div>
+    <h1>AI Video Generator</h1>
+    <div class="subtitle">Demo Access</div>
+    
+    <div id="error" class="error"></div>
+    
+    <form id="loginForm">
+      <input 
+        type="password" 
+        id="password" 
+        placeholder="Enter password"
+        required
+        autofocus
+      />
+      <button type="submit" id="submitBtn">Access Demo</button>
+    </form>
+  </div>
+  
+  <script>
+    const form = document.getElementById('loginForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const error = document.getElementById('error');
+    const passwordInput = document.getElementById('password');
+    
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      error.classList.remove('show');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Checking...';
+      
+      try {
+        const res = await fetch('/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: passwordInput.value })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          window.location.href = '/';
+        } else {
+          error.textContent = data.error || 'Invalid password';
+          error.classList.add('show');
+          passwordInput.value = '';
+          passwordInput.focus();
+        }
+      } catch (err) {
+        error.textContent = 'Connection error. Please try again.';
+        error.classList.add('show');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Access Demo';
+      }
+    };
+  </script>
+</body>
+</html>
+

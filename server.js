@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const session = require('express-session');
 const OpenAI = require('openai');
 const axios = require('axios');
 const ffmpeg = require('fluent-ffmpeg');
@@ -337,11 +338,70 @@ async function generateVideo(prompt) {
 // ============================================
 const app = express();
 
-app.use(express.json());
-app.use(express.static(__dirname));
-app.use('/output', express.static(path.join(__dirname, 'output')));
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'ai-video-gen-demo-secret-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production' // Use secure cookies in production
+  }
+}));
 
-app.post('/generate', async (req, res) => {
+app.use(express.json());
+
+// Authentication middleware
+function requireAuth(req, res, next) {
+  if (req.session && req.session.authenticated) {
+    return next();
+  }
+  
+  // If requesting JSON endpoint, return JSON error
+  if (req.path.startsWith('/api') || req.path === '/generate') {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  // Otherwise redirect to login
+  res.redirect('/login.html');
+}
+
+// Public routes (no authentication required)
+app.get('/login.html', (req, res) => {
+  // If already authenticated, redirect to home
+  if (req.session && req.session.authenticated) {
+    return res.redirect('/');
+  }
+  res.sendFile(path.join(__dirname, 'login.html'));
+});
+
+app.post('/login', (req, res) => {
+  const { password } = req.body;
+  const correctPassword = process.env.DEMO_PASSWORD || 'demo2024';
+  
+  if (password === correctPassword) {
+    req.session.authenticated = true;
+    res.json({ success: true });
+  } else {
+    res.json({ success: false, error: 'Invalid password' });
+  }
+});
+
+app.get('/logout', (req, res) => {
+  req.session.destroy();
+  res.redirect('/login.html');
+});
+
+// Serve index.html (protected)
+app.get('/', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Protected static files
+app.use('/output', requireAuth, express.static(path.join(__dirname, 'output')));
+
+app.post('/generate', requireAuth, async (req, res) => {
   try {
     const { prompt } = req.body;
     

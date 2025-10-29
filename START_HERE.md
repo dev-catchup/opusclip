@@ -63,12 +63,16 @@ cd /Users/catchup.life/OpusClip
 nano .env
 ```
 
-Add your API keys:
+Add your API keys and demo password:
 ```env
 OPENAI_API_KEY=sk-your-actual-openai-key
 PEXELS_API_KEY=your-actual-pexels-key
+DEMO_PASSWORD=demo2024
+SESSION_SECRET=random-secret-string-here
 PORT=3000
 ```
+
+**🔒 Password Protection:** The app now requires login! Default password is `demo2024`. Perfect for sharing with interviewers. See `DEPLOYMENT.md` for details.
 
 Save and exit (Ctrl+X, Y, Enter)
 
