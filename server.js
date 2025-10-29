@@ -397,8 +397,16 @@ app.post('/login', (req, res) => {
   
   if (password === correctPassword) {
     req.session.authenticated = true;
-    console.log('   ✅ Login successful');
-    res.json({ success: true });
+    
+    // IMPORTANT: Save session before responding
+    req.session.save((err) => {
+      if (err) {
+        console.log('   ❌ Session save error:', err);
+        return res.json({ success: false, error: 'Session error' });
+      }
+      console.log('   ✅ Login successful, session saved');
+      res.json({ success: true });
+    });
   } else {
     console.log('   ❌ Login failed - incorrect password');
     res.json({ success: false, error: 'Invalid password' });
