@@ -348,6 +348,9 @@ async function generateVideo(prompt) {
 // ============================================
 const app = express();
 
+// IMPORTANT: Trust proxy for Railway deployment
+app.set('trust proxy', 1);
+
 // Session configuration
 app.use(session({
   secret: process.env.SESSION_SECRET || 'ai-video-gen-demo-secret-change-in-production',
@@ -356,17 +359,29 @@ app.use(session({
   cookie: {
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production' // Use secure cookies in production
-  }
+    secure: process.env.NODE_ENV === 'production', // Secure cookies in production
+    sameSite: 'lax' // Lax for same-site requests (works with redirects)
+  },
+  proxy: true // Trust the proxy
 }));
 
 app.use(express.json());
 
 // Authentication middleware
 function requireAuth(req, res, next) {
+  console.log('🔒 Auth check:', {
+    path: req.path,
+    hasSession: !!req.session,
+    authenticated: req.session?.authenticated,
+    sessionID: req.sessionID
+  });
+  
   if (req.session && req.session.authenticated) {
+    console.log('  ✅ Authenticated, allowing access');
     return next();
   }
+  
+  console.log('  ❌ Not authenticated, redirecting to login');
   
   // If requesting JSON endpoint, return JSON error
   if (req.path.startsWith('/api') || req.path === '/generate') {
