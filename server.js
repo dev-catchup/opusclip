@@ -1,4 +1,8 @@
-require('dotenv').config();
+// Load .env only in development (Railway injects vars directly)
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
+
 const express = require('express');
 const session = require('express-session');
 const OpenAI = require('openai');
@@ -10,6 +14,7 @@ const path = require('path');
 // Initialize OpenAI
 if (!process.env.OPENAI_API_KEY) {
   console.error('❌ ERROR: OPENAI_API_KEY is not set!');
+  console.error('Available env vars:', Object.keys(process.env).filter(k => !k.includes('PATH')));
   process.exit(1);
 }
 
@@ -385,10 +390,17 @@ app.post('/login', (req, res) => {
   const { password } = req.body;
   const correctPassword = process.env.DEMO_PASSWORD || 'demo2024';
   
+  console.log('🔐 Login attempt');
+  console.log('   Received password length:', password?.length || 0);
+  console.log('   Expected password length:', correctPassword.length);
+  console.log('   Match:', password === correctPassword);
+  
   if (password === correctPassword) {
     req.session.authenticated = true;
+    console.log('   ✅ Login successful');
     res.json({ success: true });
   } else {
+    console.log('   ❌ Login failed - incorrect password');
     res.json({ success: false, error: 'Invalid password' });
   }
 });
