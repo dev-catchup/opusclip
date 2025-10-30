@@ -219,6 +219,8 @@ async function renderVideo(clipPaths, scenes, voiceoverPath, outputPath) {
   console.log('🎬 Rendering final video with transitions...');
   
   const subtitlePath = createSubtitles(scenes);
+  // Escape path for FFmpeg - replace backslashes with forward slashes
+  const escapedSubPath = subtitlePath.replace(/\\/g, '/').replace(/:/g, '\\:');
   
   return new Promise((resolve, reject) => {
     const command = ffmpeg();
@@ -234,8 +236,8 @@ async function renderVideo(clipPaths, scenes, voiceoverPath, outputPath) {
     const fade = 0.5; // 0.5 second cross-fade
     
     if (clipPaths.length === 1) {
-      // Single clip - just add subtitles
-      filterComplex = `[0:v]subtitles=${subtitlePath}:force_style='FontName=Arial,FontSize=28,PrimaryColour=&HFFFFFF,OutlineColour=&H000000,Outline=2,Alignment=2,MarginV=50'[v]`;
+      // Single clip - just add subtitles (with escaped path)
+      filterComplex = `[0:v]subtitles='${escapedSubPath}':force_style='FontName=Arial,FontSize=28,PrimaryColour=&HFFFFFF,OutlineColour=&H000000,Outline=2,Alignment=2,MarginV=50'[v]`;
     } else {
       // Multiple clips - add xfade transitions
       let offset = 0;
@@ -252,9 +254,9 @@ async function renderVideo(clipPaths, scenes, voiceoverPath, outputPath) {
         }
       }
       
-      // Add subtitles
+      // Add subtitles (with escaped path)
       const lastLabel = clipPaths.length === 2 ? 'v01' : `v0${clipPaths.length - 1}`;
-      filterComplex += `[${lastLabel}]subtitles=${subtitlePath}:force_style='FontName=Arial,FontSize=28,PrimaryColour=&HFFFFFF,OutlineColour=&H000000,Outline=2,Alignment=2,MarginV=50'[v]`;
+      filterComplex += `[${lastLabel}]subtitles='${escapedSubPath}':force_style='FontName=Arial,FontSize=28,PrimaryColour=&HFFFFFF,OutlineColour=&H000000,Outline=2,Alignment=2,MarginV=50'[v]`;
     }
     
     // Calculate actual video duration (accounting for transition overlaps)
@@ -264,30 +266,36 @@ async function renderVideo(clipPaths, scenes, voiceoverPath, outputPath) {
     
     console.log(`📊 Video timing: ${sumOfDurations}s total - ${numTransitions * fade}s transitions = ${actualVideoDuration}s actual`);
     
-    // Add audio padding to match actual video duration
-    const audioFilter = `[${clipPaths.length}:a]apad=whole_dur=${actualVideoDuration}[audio]`;
+    // Add audio padding and trim to exactly match video duration
+    // apad adds silence, atrim cuts to exact length
+    const audioFilter = `[${clipPaths.length}:a]apad=whole_dur=${actualVideoDuration},atrim=0:${actualVideoDuration},asetpts=PTS-STARTPTS[audio]`;
+    
+    console.log(`🔊 Audio: Padding to ${actualVideoDuration}s and trimming`);
     
     command
       .complexFilter([filterComplex, audioFilter])
       .outputOptions([
         '-map [v]',
-        '-map [audio]', // Use padded audio
+        '-map [audio]',
         '-c:v libx264',
         '-preset medium',
         '-crf 23',
         '-c:a aac',
         '-b:a 192k',
         '-pix_fmt yuv420p',
-        `-t ${actualVideoDuration}` // Set output duration to match actual video length with transitions
+        '-shortest' // Stop when shortest stream ends (they should be equal now)
       ])
       .output(outputPath)
       .on('end', () => {
         console.log('✅ Video complete!');
         resolve(outputPath);
       })
-      .on('error', reject)
+      .on('error', (err) => {
+        console.error('❌ FFmpeg error:', err.message);
+        reject(err);
+      })
       .on('progress', (p) => {
-        if (p.percent) console.log(`  ${Math.round(p.percent)}%`);
+        if (p.percent) console.log(`  Progress: ${Math.round(p.percent)}%`);
       })
       .run();
   });
