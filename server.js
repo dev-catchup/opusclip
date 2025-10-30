@@ -206,9 +206,10 @@ function createSubtitles(scenes) {
     currentTime = endTime;
   });
   
-  const srtPath = path.join('temp', 'subtitles.srt');
+  const srtPath = path.join(__dirname, 'temp', 'subtitles.srt');
   fs.writeFileSync(srtPath, srtContent);
-  console.log('✅ Subtitles created');
+  console.log('✅ Subtitles created at:', srtPath);
+  console.log('📄 Subtitle content preview:', srtContent.substring(0, 200));
   return srtPath;
 }
 
@@ -219,8 +220,18 @@ async function renderVideo(clipPaths, scenes, voiceoverPath, outputPath) {
   console.log('🎬 Rendering final video with transitions...');
   
   const subtitlePath = createSubtitles(scenes);
+  
+  // Verify subtitle file exists
+  if (!fs.existsSync(subtitlePath)) {
+    console.error('❌ Subtitle file not found at:', subtitlePath);
+    throw new Error('Subtitle file creation failed');
+  }
+  
+  console.log('✅ Subtitle file verified at:', subtitlePath);
+  
   // Escape path for FFmpeg - replace backslashes with forward slashes
   const escapedSubPath = subtitlePath.replace(/\\/g, '/').replace(/:/g, '\\:');
+  console.log('🔧 Escaped subtitle path for FFmpeg:', escapedSubPath);
   
   return new Promise((resolve, reject) => {
     const command = ffmpeg();
@@ -340,7 +351,8 @@ async function generateVideo(prompt) {
     
     // 6. Cleanup
     console.log('🧹 Cleaning up...');
-    [...rawPaths, ...finalPaths, voicePath].forEach(file => {
+    const subtitleFile = path.join(__dirname, 'temp', 'subtitles.srt');
+    [...rawPaths, ...finalPaths, voicePath, subtitleFile].forEach(file => {
       if (fs.existsSync(file)) fs.unlinkSync(file);
     });
     
