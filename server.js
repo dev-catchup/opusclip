@@ -177,15 +177,20 @@ async function generateVoiceover(scenes) {
 }
 
 // ============================================
-// 5. CREATE SUBTITLES (Optional Captions)
+// 5. CREATE SUBTITLES (Accounting for Transitions)
 // ============================================
 function createSubtitles(scenes) {
+  const TRANSITION_DURATION = 0.5; // Must match renderVideo fade duration
   let srtContent = '';
   let currentTime = 0;
   
   scenes.forEach((scene, index) => {
     const startTime = currentTime;
-    const endTime = currentTime + scene.duration;
+    // Scene duration minus transition overlap (except for last scene)
+    const actualDuration = (index < scenes.length - 1) 
+      ? scene.duration - TRANSITION_DURATION 
+      : scene.duration;
+    const endTime = currentTime + actualDuration;
     
     const formatTime = (seconds) => {
       const hrs = Math.floor(seconds / 3600);
@@ -203,13 +208,15 @@ function createSubtitles(scenes) {
     srtContent += `${formatTime(startTime)} --> ${formatTime(endTime)}\n`;
     srtContent += `${cleanText}\n\n`;
     
+    console.log(`  📝 Subtitle ${index + 1}: ${formatTime(startTime)} → ${formatTime(endTime)}`);
+    
     currentTime = endTime;
   });
   
   const srtPath = path.join(__dirname, 'temp', 'subtitles.srt');
   fs.writeFileSync(srtPath, srtContent);
   console.log('✅ Subtitles created at:', srtPath);
-  console.log('📄 Subtitle content preview:', srtContent.substring(0, 200));
+  console.log(`📄 Total subtitle duration: ${currentTime.toFixed(1)}s`);
   return srtPath;
 }
 
