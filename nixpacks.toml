@@ -1,0 +1,11 @@
+# Railway Nixpacks configuration for FFmpeg
+
+[phases.setup]
+nixPkgs = ['ffmpeg']
+
+[phases.install]
+cmds = ['npm ci']
+
+[start]
+cmd = 'npm start'
+

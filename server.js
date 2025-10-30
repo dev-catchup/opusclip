@@ -10,6 +10,33 @@ const axios = require('axios');
 const ffmpeg = require('fluent-ffmpeg');
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
+
+// Configure FFmpeg path for Railway/production
+try {
+  // Try to find ffmpeg in system PATH
+  const ffmpegPath = execSync('which ffmpeg').toString().trim();
+  if (ffmpegPath) {
+    console.log('✅ FFmpeg found at:', ffmpegPath);
+    ffmpeg.setFfmpegPath(ffmpegPath);
+  }
+} catch (error) {
+  console.log('⚠️ FFmpeg not found in PATH, will try default paths');
+  // Try common installation paths
+  const commonPaths = [
+    '/usr/bin/ffmpeg',
+    '/usr/local/bin/ffmpeg',
+    '/app/.apt/usr/bin/ffmpeg'
+  ];
+  
+  for (const tryPath of commonPaths) {
+    if (fs.existsSync(tryPath)) {
+      console.log('✅ FFmpeg found at:', tryPath);
+      ffmpeg.setFfmpegPath(tryPath);
+      break;
+    }
+  }
+}
 
 // Initialize OpenAI
 if (!process.env.OPENAI_API_KEY) {
