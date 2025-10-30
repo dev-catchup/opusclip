@@ -16,6 +16,10 @@ const path = require('path');
 console.log('✅ Using bundled FFmpeg at:', ffmpegStatic);
 ffmpeg.setFfmpegPath(ffmpegStatic);
 
+// Version tracking
+const APP_VERSION = 'v2.1.0-subtitle-fix';
+console.log(`📦 App Version: ${APP_VERSION}`);
+
 // Initialize OpenAI
 if (!process.env.OPENAI_API_KEY) {
   console.error('❌ ERROR: OPENAI_API_KEY is not set!');
@@ -499,14 +503,15 @@ app.get('/health', (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`\n${'='.repeat(60)}`);
-  console.log(`🚀 AI Video Generator Ready!`);
+  console.log(`🚀 AI Video Generator Ready! ${APP_VERSION}`);
   console.log(`${'='.repeat(60)}`);
   console.log(`\n📍 Server: http://localhost:${PORT}`);
   console.log(`\n✅ Environment:`);
+  console.log(`   • Version: ${APP_VERSION}`);
   console.log(`   • NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
   console.log(`   • OPENAI_API_KEY: ${process.env.OPENAI_API_KEY ? '✓ Set (sk-' + process.env.OPENAI_API_KEY.substring(3, 8) + '...)' : '✗ Missing'}`);
   console.log(`   • PEXELS_API_KEY: ${process.env.PEXELS_API_KEY ? '✓ Set' : '✗ Missing'}`);
   console.log(`   • DEMO_PASSWORD: ${process.env.DEMO_PASSWORD ? '✓ Set' : '✗ Missing (using default)'}`);
-  console.log(`   • FFmpeg: Checking...\n`);
+  console.log(`   • FFmpeg: ${ffmpegStatic}\n`);
 });
 
